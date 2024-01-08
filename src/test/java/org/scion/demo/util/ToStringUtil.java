@@ -14,6 +14,10 @@
 
 package org.scion.demo.util;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
 public class ToStringUtil {
 
   public static String toStringIPv4(int ip) {
@@ -91,5 +95,47 @@ public class ToStringUtil {
     //      }
     //    }
     return s;
+  }
+
+  /**
+   * Turns an InetSocketAddress into a String. Specifically, it surrounds the numeric code of IPv6
+   * addresses with [], e.g. [0:0:0:0:0:0:0:0]:12345.
+   *
+   * @param addr socket address
+   * @return address:port
+   */
+  public static String toAddressPort(InetSocketAddress addr) {
+    InetAddress inetAddress = addr.getAddress();
+    if (inetAddress instanceof Inet6Address) {
+      String host = inetAddress.getHostAddress();
+      if (host.contains(":") && !host.endsWith("]")) {
+        return "[" + host + "]:" + addr.getPort();
+      }
+    }
+    return inetAddress.getHostAddress() + ":" + addr.getPort();
+  }
+
+  public static String toStringHex(byte[] ba) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    for (int i = 0; i < ba.length - 1; i++) {
+      int ub = Byte.toUnsignedInt(ba[i]);
+      sb.append("0x").append(Integer.toHexString(ub)).append(", ");
+    }
+    int ub = Byte.toUnsignedInt(ba[ba.length - 1]);
+    sb.append("0x").append(Integer.toHexString(ub));
+    sb.append("]");
+    return sb.toString();
+  }
+
+  public static String toStringByte(byte[] ba) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{");
+    for (int i = 0; i < ba.length - 1; i++) {
+      sb.append(ba[i]).append(", ");
+    }
+    sb.append(ba[ba.length - 1]);
+    sb.append("}");
+    return sb.toString();
   }
 }

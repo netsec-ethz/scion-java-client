@@ -19,15 +19,48 @@ The central classes of the API are:
 - `DatagramChannel`: This class works like a `java.nio.channel.DatagramChannel`. It implements 
   `Channel` and `ByteChannel`. Scattering. gathering, multicast and selectors are currently not
   supported.
+- `Path`, `RequestPath`, `ResponsePath`: The notion of path is slightly different than in other 
+    parts of Scion. A `Path` contains a route to a destination ("raw path") plus the full 
+    destination, i.e. IP-address and port.
+  - `RequestPath` is a `Path` with meta information (bandwidth, geo info, etc).
+  - `ResponsePath` is a `Path` with source IA, IP & port.
+- `PathPolicy` is an interface with several example implementations for:
+  first path returned by daemon (default), max bandwidth, min latency, min hops, ...
+- `ScionService`: Provides methods to request paths and get ISD/AS information.
+  `ScionService` instances can be created with the `Scion` class. The first instance that is created will subsequently
+  returned by `Scion.defaultService()`.
+- `Scion`, `ScionUtil`, `ScionConstants`: Utility classes.
+- `ScionSocketOptions`: Options for the `DatagramChannel`.
+- `SCMP` provides `ScmpType` and `ScmpCode` enums with text messages. It also contains
+  `ScmpMessage` (for SCMP errors) and `ScmpEcho`/`ScmpTraceroute` types. These can be used with the
+  `DatagramChannel`'s `sendXXXRequest()` and `setXXXListener()` methods.
+- **TODO** Currently residing in `test`: `ScionPacketInspector`: A packet inspector and builder.
 - **TODO** `DatagramSocket` and `DatagramPacket`: These work similar to the old `java.net.DatagramSocket`.
   This is currently deprecated because it does not work well.
-- `PathViewer`: A utility class to view path details.
-- **TODO** `ScionPacketInspector`: A packet inspector and builder.
-- `ScionService`: Provides methods to request paths and get ISD/AS information.
-- `Scion`, `ScionUtil`, `ScionAddress`, `ScionPath`, `ScionSocketAddress`.
-  - `ScionAddress` and `ScionSocketAddress` contain ISD/AS information on top of a 
-    `InetAddress`/`InetSocketAddress`
-  - `ScionSocketAddress` can contain a `ScionPath`
+
+### Features
+Supported:
+- DatagramChannel support: read(), write(), receive(), send(), bind(), connnect(), ... 
+- Path selection policies
+- Path expiry/refresh
+- Border router switching
+- Packet validation
+- DNS/TXT scion entry lookup
+- Configurable:
+  - daemon address
+  - Path expiry
+- Packet inspector for debugging
+- No "dispatcher"
+
+Missing:
+- DatagramChannel support for Selectors
+- DatagramSockets
+- SCMP error messages
+- SCMP info messages
+- Bootstrapping
+- EPIC
+- RHINE
+- ...
 
 ## DatagramChannel
 
@@ -35,9 +68,27 @@ The central classes of the API are:
 
 Options are defined in `ScionSocketOptions`, see javadoc for details.
 
-| Option            | Default    | Short description         |
-|-------------------|------------|---------------------------|
-| `API_THROW_PARSER_FAILURE` | `false` | Throw exception when reading invalid packet | 
+| Option                        | Default | Short description                                               |
+|-------------------------------|---------|-----------------------------------------------------------------|
+| `SN_API_WRITE_TO_USER_BUFFER`    | `false` | Throw exception when receiving an invalid packet          | 
+| `SN_PATH_EXPIRY_MARGIN` | `2`     | A new path is requested if `now + margin > pathExpirationDate` | 
+
+## Performance Pitfalls
+
+- **Using `SocketAddress` for `send()`**. `send(buffer, socketAddress)` is a convenience function. However, when sending 
+  multiple packets to the same destination, one should use `path = send(buffer, path)` or `connect()` + `write()` in 
+  order to avoid frequent path lookups.
+
+- **Using expired path (client).** When using `send(buffer, path)` with an expired `RequestPath`, the channel will 
+  transparently look up a new path. This works but causes a path lookup for every `send()`.
+  Solution: always use the latest path returned by send, e.g. `path = send(buffer, path)`.
+
+- **Using expired path (server).** When using `send(buffer, path)` with an expired `ResponsePath`, the channel will
+  simple send it anyway (could just drop it) TODO
+  -> Callback?
+  - TODO request new path a few seconds in advance on client side?    
+
+
 
 ## Demo application - ping pong
 

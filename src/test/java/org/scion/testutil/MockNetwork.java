@@ -16,16 +16,20 @@ package org.scion.testutil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.stream.Collectors;
 import org.scion.PackageVisibilityHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +37,8 @@ import org.slf4j.LoggerFactory;
 public class MockNetwork {
 
   public static final String BORDER_ROUTER_HOST = "127.0.0.1";
-  public static final int BORDER_ROUTER_PORT1 = 30555;
-  public static final int BORDER_ROUTER_PORT2 = 30556;
+  private static final int BORDER_ROUTER_PORT1 = 30555;
+  private static final int BORDER_ROUTER_PORT2 = 30556;
   public static final String TINY_SRV_ADDR_1 = "127.0.0.112";
   public static final int TINY_SRV_PORT_1 = 22233;
   public static final String TINY_SRV_ISD_AS = "1-ff00:0:112";
@@ -42,7 +46,8 @@ public class MockNetwork {
   private static final Logger logger = LoggerFactory.getLogger(MockNetwork.class.getName());
   private static ExecutorService routers = null;
   private static MockDaemon daemon = null;
-  static final AtomicInteger nForward = new AtomicInteger();
+  static final AtomicInteger nForwardTotal = new AtomicInteger();
+  static final AtomicIntegerArray nForwards = new AtomicIntegerArray(20);
 
   /**
    * Start a network with one daemon and a border router. The border router connects "1-ff00:0:110"
@@ -58,25 +63,25 @@ public class MockNetwork {
       throw new IllegalStateException();
     }
 
-    routers =
-        Executors.newSingleThreadExecutor(
-            new ThreadFactory() {
-              int id = 0;
+    routers = Executors.newFixedThreadPool(2);
 
-              @Override
-              public Thread newThread(Runnable r) {
-                return new Thread(r, "MockNetwork-" + id++);
-              }
-            });
-
-    MockBorderRouter routerInstance =
+    List<MockBorderRouter> brList = new ArrayList<>();
+    brList.add(
+        new MockBorderRouter(0, BORDER_ROUTER_PORT1, BORDER_ROUTER_PORT2, localIPv4, remoteIPv4));
+    brList.add(
         new MockBorderRouter(
-            "BorderRouter-1", BORDER_ROUTER_PORT1, BORDER_ROUTER_PORT2, localIPv4, remoteIPv4);
-    routers.execute(routerInstance);
+            1, BORDER_ROUTER_PORT1 + 10, BORDER_ROUTER_PORT2 + 10, localIPv4, remoteIPv4));
 
-    InetSocketAddress brAddr = new InetSocketAddress(BORDER_ROUTER_HOST, routerInstance.getPort1());
+    for (MockBorderRouter br : brList) {
+      routers.execute(br);
+    }
+
+    List<InetSocketAddress> brAddrList =
+        brList.stream()
+            .map(mBR -> new InetSocketAddress(BORDER_ROUTER_HOST, mBR.getPort1()))
+            .collect(Collectors.toList());
     try {
-      daemon = MockDaemon.createForBorderRouter(brAddr).start();
+      daemon = MockDaemon.createForBorderRouter(brAddrList).start();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -116,7 +121,14 @@ public class MockNetwork {
   }
 
   public static int getAndResetForwardCount() {
-    return nForward.getAndSet(0);
+    for (int i = 0; i < nForwards.length(); i++) {
+      nForwards.set(i, 0);
+    }
+    return nForwardTotal.getAndSet(0);
+  }
+
+  public static int getForwardCount(int routerId) {
+    return nForwards.get(routerId);
   }
 }
 
@@ -124,14 +136,17 @@ class MockBorderRouter implements Runnable {
 
   private static final Logger logger = LoggerFactory.getLogger(MockBorderRouter.class.getName());
 
+  private final int id;
   private final String name;
   private final int port1;
   private final int port2;
   private final boolean ipv4_1;
   private final boolean ipv4_2;
 
-  MockBorderRouter(String name, int port1, int port2, boolean ipv4_1, boolean ipv4_2) {
-    this.name = name;
+  MockBorderRouter(int id, int port1, int port2, boolean ipv4_1, boolean ipv4_2) {
+    this.id = id;
+    this.name = "BorderRouter-" + id;
+    Thread.currentThread().setName(name);
     this.port1 = port1;
     this.port2 = port2;
     this.ipv4_1 = ipv4_1;
@@ -165,18 +180,26 @@ class MockBorderRouter implements Runnable {
           if (key.isReadable()) {
             DatagramChannel incoming = (DatagramChannel) key.channel();
             DatagramChannel outgoing = (DatagramChannel) key.attachment();
-            Object o = incoming.receive(buffer);
-            if (o == null) {
+            SocketAddress srcAddress = incoming.receive(buffer);
+            if (srcAddress == null) {
               throw new IllegalStateException();
             }
 
             buffer.flip();
             InetSocketAddress dstAddress = PackageVisibilityHelper.getDstAddress(buffer);
-            // logger.info(name + " forwarding " + buffer.position() + " bytes to " + dstAddress);
+            logger.info(
+                name
+                    + " forwarding "
+                    + buffer.remaining()
+                    + " bytes from "
+                    + srcAddress
+                    + " to "
+                    + dstAddress);
 
             outgoing.send(buffer, dstAddress);
             buffer.clear();
-            MockNetwork.nForward.incrementAndGet();
+            MockNetwork.nForwardTotal.incrementAndGet();
+            MockNetwork.nForwards.incrementAndGet(id);
           }
           iter.remove();
         }

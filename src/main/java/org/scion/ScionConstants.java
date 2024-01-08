@@ -22,9 +22,15 @@ public final class ScionConstants {
   public static final String ENV_DAEMON_PORT = "SCION_DAEMON_PORT";
   public static final String DEFAULT_DAEMON_PORT = "30255";
 
+  /** Paths are refreshed when their expiry is less than X seconds away. */
+  public static final String PROPERTY_PATH_EXPIRY_MARGIN = "org.scion.channel.pathExpiryMargin";
+
+  public static final String ENV_PATH_EXPIRY_MARGIN = "SCION_CHANNEL_PATH_EXPIRY_MARGIN";
+  public static final int DEFAULT_PATH_EXPIRY_MARGIN = 2;
+
   /**
-   * Non-public property that allows specifying DNS entries for debugging Example with two entries:
-   * server1.com="scion=1-ff00:0:110,127.0.0.1";server2.ch="scion=1-ff00:0:112,::1"
+   * Non-public property that allows specifying DNS TXT entries for debugging Example with two
+   * entries: server1.com="scion=1-ff00:0:110,127.0.0.1";server2.ch="scion=1-ff00:0:112,::1"
    */
-  static final String DEBUG_PROPERTY_DNS_MOCK = "DEBUG_SCION_DNS_MOCK";
+  static final String DEBUG_PROPERTY_MOCK_DNS_TXT = "DEBUG_SCION_MOCK_DNS_TXT";
 }
