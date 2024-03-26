@@ -16,9 +16,13 @@ package org.scion.api;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +47,7 @@ public class ScionServiceTest {
 
   @BeforeEach
   public void beforeEach() {
+    ScionService.closeDefault();
     // reset counter
     MockDaemon.getAndResetCallCount();
   }
@@ -266,6 +271,52 @@ public class ScionServiceTest {
       }
     } finally {
       MockDaemon.closeDefault();
+    }
+  }
+
+  @Test
+  void getIsdAs_etcHostsFile() throws IOException, URISyntaxException {
+    java.nio.file.Path file;
+    ClassLoader classLoader = getClass().getClassLoader();
+    URL resource = classLoader.getResource("etc-scion-hosts");
+//    if (resource != null) {
+      file = Paths.get(resource.toURI());
+    //}
+    System.setProperty(Constants.PROPERTY_HOSTS_FILES, file.toString());
+    MockDaemon.createAndStartDefault();
+    try {
+      ScionService service = Scion.defaultService();
+      // line 1
+      long ia1 = service.getIsdAs("test-server");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:111"), ia1);
+      long ia1IP = service.getIsdAs("42.0.0.11");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:111"), ia1IP);
+
+      // line 2
+      long ia2a = service.getIsdAs("test-server-1");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:112"), ia2a);
+      long ia2b = service.getIsdAs("test-server-2");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:112"), ia2b);
+      long ia2IP = service.getIsdAs("42.0.0.12");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:112"), ia2IP);
+
+      // line 3
+      long ia3 = service.getIsdAs("test-server-ipv6");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:113"), ia3);
+      long ia3IP = service.getIsdAs("::42");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:113"), ia3IP);
+
+      // Should all fail:
+      long ia4a = service.getIsdAs("hello");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:114"), ia4a);
+      long ia4b = service.getIsdAs("42.0.0.10");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:114"), ia4b);
+      long ia4c = service.getIsdAs("42.0.0.13");
+      assertEquals(ScionUtil.parseIA("1-ff00:0:114"), ia4c);
+
+    } finally {
+      MockDaemon.closeDefault();
+      System.clearProperty(Constants.PROPERTY_HOSTS_FILES);
     }
   }
 }

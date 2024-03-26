@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.scion.internal.DNSHelper;
+import org.scion.internal.HostsFileParser;
 import org.scion.internal.ScionBootstrapper;
 import org.scion.internal.Segments;
 import org.scion.proto.control_plane.SegmentLookupServiceGrpc;
@@ -77,6 +78,7 @@ public class ScionService {
   private final AtomicLong localIsdAs = new AtomicLong(ISD_AS_NOT_SET);
   private Thread shutdownHook;
   private final java.nio.channels.DatagramChannel[] ifDiscoveryChannel = {null};
+  private final HostsFileParser hostsFile = new HostsFileParser();
 
   protected enum Mode {
     DAEMON,
@@ -287,6 +289,12 @@ public class ScionService {
    * @throws IOException if an errors occurs while querying paths.
    */
   public List<RequestPath> getPaths(InetSocketAddress dstAddress) throws IOException {
+    if (dstAddress.getHostName() != null) {
+      ScionAddress address = getScionAddress(dstAddress.getHostName());
+      address.getInetAddress();
+      // TODO use result & cache result
+    }
+
     long dstIsdAs = getIsdAs(dstAddress.getHostString());
     return getPaths(dstIsdAs, dstAddress);
   }
@@ -367,6 +375,12 @@ public class ScionService {
     String txtFromProperties = findTxtRecordInProperties(hostName, DNS_TXT_KEY);
     if (txtFromProperties != null) {
       return parseTxtRecordToIA(txtFromProperties);
+    }
+
+    // Check /etc/scion/hosts
+    HostsFileParser.HostEntry entry = hostsFile.find(hostName);
+    if (entry != null) {
+      return entry.getIsdAs();
     }
 
     // Use local ISD/AS for localhost addresses
