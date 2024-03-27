@@ -59,6 +59,15 @@ public final class Constants {
   public static final int DEFAULT_PATH_EXPIRY_MARGIN = 10;
 
   /**
+   * Disable usage of OS search domains for DNS lookup, e.g from /etc/resolv.conf. This needs to be
+   * disabled for JUnit testing.
+   */
+  public static final String PROPERTY_USE_DNS_SEARCH_DOMAINS = "USE_OS_DNS_SEARCH_DOMAINS";
+
+  public static final String ENV_USE_DNS_SEARCH_DOMAINS = "org.scion.test.useOsDnsSearchDomains";
+  public static final boolean DEFAULT_USE_DNS_SEARCH_DOMAINS = true;
+
+  /**
    * Non-public property that allows specifying DNS TXT entries for debugging. Example with two
    * entries: server1.com="scion=1-ff00:0:110,127.0.0.1";server2.ch="scion=1-ff00:0:112,::1"
    */

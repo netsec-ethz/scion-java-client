@@ -25,8 +25,10 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.scion.*;
+import org.scion.internal.DNSHelper;
 import org.scion.testutil.MockDaemon;
 import org.scion.testutil.MockNetwork;
 import org.scion.testutil.MockTopologyServer;
@@ -310,5 +312,12 @@ public class ScionServiceTest {
       MockDaemon.closeDefault();
       System.clearProperty(Constants.PROPERTY_HOSTS_FILES);
     }
+  }
+
+  // TODO test properly
+  @Disabled
+  @Test
+  void x() throws IOException {
+    DNSHelper.searchForDiscoveryService();
   }
 }

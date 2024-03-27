@@ -16,16 +16,19 @@ package org.scion;
 
 import static org.scion.Constants.DEFAULT_DAEMON_HOST;
 import static org.scion.Constants.DEFAULT_DAEMON_PORT;
+import static org.scion.Constants.DEFAULT_USE_DNS_SEARCH_DOMAINS;
 import static org.scion.Constants.ENV_BOOTSTRAP_HOST;
 import static org.scion.Constants.ENV_BOOTSTRAP_NAPTR_NAME;
 import static org.scion.Constants.ENV_BOOTSTRAP_TOPO_FILE;
 import static org.scion.Constants.ENV_DAEMON_HOST;
 import static org.scion.Constants.ENV_DAEMON_PORT;
+import static org.scion.Constants.ENV_USE_DNS_SEARCH_DOMAINS;
 import static org.scion.Constants.PROPERTY_BOOTSTRAP_HOST;
 import static org.scion.Constants.PROPERTY_BOOTSTRAP_NAPTR_NAME;
 import static org.scion.Constants.PROPERTY_BOOTSTRAP_TOPO_FILE;
 import static org.scion.Constants.PROPERTY_DAEMON_HOST;
 import static org.scion.Constants.PROPERTY_DAEMON_PORT;
+import static org.scion.Constants.PROPERTY_USE_DNS_SEARCH_DOMAINS;
 
 import io.grpc.*;
 import java.io.IOException;
@@ -159,6 +162,15 @@ public class ScionService {
       if (naptrName != null) {
         defaultService = new ScionService(naptrName, Mode.BOOTSTRAP_VIA_DNS);
         return defaultService;
+      }
+
+      // TODO try local daemon before trying discovery service
+      if (ScionUtil.getPropertyOrEnv(
+          PROPERTY_USE_DNS_SEARCH_DOMAINS,
+          ENV_USE_DNS_SEARCH_DOMAINS,
+          DEFAULT_USE_DNS_SEARCH_DOMAINS)) {
+        String dnsResolver = DNSHelper.searchForDiscoveryService();
+        defaultService = new ScionService(dnsResolver, Mode.BOOTSTRAP_SERVER_IP);
       }
 
       // try daemon
