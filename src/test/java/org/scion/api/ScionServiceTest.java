@@ -16,7 +16,6 @@ package org.scion.api;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -276,12 +275,8 @@ public class ScionServiceTest {
 
   @Test
   void getIsdAs_etcHostsFile() throws IOException, URISyntaxException {
-    java.nio.file.Path file;
-    ClassLoader classLoader = getClass().getClassLoader();
-    URL resource = classLoader.getResource("etc-scion-hosts");
-//    if (resource != null) {
-      file = Paths.get(resource.toURI());
-    //}
+    URL resource = getClass().getClassLoader().getResource("etc-scion-hosts");
+    java.nio.file.Path file = Paths.get(resource.toURI());
     System.setProperty(Constants.PROPERTY_HOSTS_FILES, file.toString());
     MockDaemon.createAndStartDefault();
     try {
@@ -307,13 +302,10 @@ public class ScionServiceTest {
       assertEquals(ScionUtil.parseIA("1-ff00:0:113"), ia3IP);
 
       // Should all fail:
-      long ia4a = service.getIsdAs("hello");
-      assertEquals(ScionUtil.parseIA("1-ff00:0:114"), ia4a);
-      long ia4b = service.getIsdAs("42.0.0.10");
-      assertEquals(ScionUtil.parseIA("1-ff00:0:114"), ia4b);
-      long ia4c = service.getIsdAs("42.0.0.13");
-      assertEquals(ScionUtil.parseIA("1-ff00:0:114"), ia4c);
-
+      assertThrows(IOException.class, () -> service.getIsdAs("hello"));
+      assertThrows(IOException.class, () -> service.getIsdAs("42.0.0.10"));
+      assertThrows(IOException.class, () -> service.getIsdAs("42.0.0.13"));
+      assertThrows(Exception.class, () -> service.getIsdAs(""));
     } finally {
       MockDaemon.closeDefault();
       System.clearProperty(Constants.PROPERTY_HOSTS_FILES);

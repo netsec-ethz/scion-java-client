@@ -15,6 +15,8 @@
 package org.scion.internal;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.scion.Constants;
 import org.scion.ScionRuntimeException;
 import org.scion.ScionUtil;
@@ -33,7 +34,7 @@ public class HostsFileParser {
 
   private static final Logger LOG = LoggerFactory.getLogger(HostsFileParser.class);
   private static final String PATH_LINUX = "/etc/scion/hosts";
-  private static final String HOSTS_FILES =
+  private final String HOSTS_FILES =
       ScionUtil.getPropertyOrEnv(Constants.PROPERTY_HOSTS_FILES, Constants.ENV_HOSTS_FILES);
 
   private final Map<String, HostEntry> entries = new HashMap<>();
@@ -41,9 +42,9 @@ public class HostsFileParser {
   public static class HostEntry {
     private final long isdAs;
     private final String[] hostNames;
-    private final String address;
+    private final InetAddress address;
 
-    HostEntry(long isdAs, String address, String[] hostNames) {
+    HostEntry(long isdAs, InetAddress address, String[] hostNames) {
       this.isdAs = isdAs;
       this.hostNames = hostNames;
       this.address = address;
@@ -98,15 +99,20 @@ public class HostsFileParser {
       check(addrParts[1].endsWith("]"), "Expected `]` after address");
       String addr = addrParts[1].substring(1, addrParts[1].length() - 1).trim();
       check(!addr.isEmpty(), "Address is empty");
+      // We allow anything here, even host names (which will trigger a DNS lookup).
+      // Is that ok?
+      InetAddress inetAddress = InetAddress.getByName(addr);
 
       String[] hostNames = Arrays.copyOfRange(lineParts, 1, lineParts.length);
-      HostEntry e = new HostEntry(isdIa, addr, hostNames);
+      HostEntry e = new HostEntry(isdIa, inetAddress, hostNames);
       for (String hostName : hostNames) {
         entries.put(hostName, e);
       }
-      entries.put(e.address, e);
-      System.out.println("READ: " + line); // TODO
-    } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
+      // The following may differ, e.g. for IPv6
+      // TODO find a better way, i.e. use InetAddress instances as keys?
+      entries.put(e.address.getHostName(), e);
+      entries.put(addr, e);
+    } catch (IndexOutOfBoundsException | IllegalArgumentException | UnknownHostException e) {
       LOG.info("ERROR {} while parsing file {}: {}", e.getMessage(), PATH_LINUX, line);
     }
   }

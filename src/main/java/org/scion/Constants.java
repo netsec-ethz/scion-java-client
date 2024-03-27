@@ -43,12 +43,16 @@ public final class Constants {
   /** Paths are refreshed when their expiry is less than X seconds away. */
   public static final String ENV_PATH_EXPIRY_MARGIN = "SCION_PATH_EXPIRY_MARGIN";
 
-  /** Semicolon separated list of full paths of SCION hosts files.
-   * On Linux the default is "/etc/scion/hosts". */
+  /**
+   * Semicolon separated list of full paths of SCION hosts files. On Linux the default is
+   * "/etc/scion/hosts".
+   */
   public static final String PROPERTY_HOSTS_FILES = "org.scion.hostsFiles";
 
-  /** Semicolon separated list of full paths of SCION hosts files.
-   * On Linux the default is "/etc/scion/hosts". */
+  /**
+   * Semicolon separated list of full paths of SCION hosts files. On Linux the default is
+   * "/etc/scion/hosts".
+   */
   public static final String ENV_HOSTS_FILES = "SCION_HOSTS_FILES";
 
   /** Time (in seconds) before expiration at which a paths is automatically renewed. */
