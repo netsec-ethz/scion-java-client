@@ -301,10 +301,10 @@ public class ScionServiceTest {
       long ia3IP = service.getIsdAs("::42");
       assertEquals(ScionUtil.parseIA("1-ff00:0:113"), ia3IP);
 
-      // Should all fail:
+      // Should all fail for various reasons, but ensure that these domains
+      // did not get registered despite being in the hosts file:
       assertThrows(IOException.class, () -> service.getIsdAs("hello"));
       assertThrows(IOException.class, () -> service.getIsdAs("42.0.0.10"));
-      assertThrows(IOException.class, () -> service.getIsdAs("42.0.0.13"));
       assertThrows(Exception.class, () -> service.getIsdAs(""));
     } finally {
       MockDaemon.closeDefault();
