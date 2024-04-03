@@ -1,23 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>scion.org</groupId>
-    <artifactId>scion-java-api</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <groupId>org.scion</groupId>
+    <artifactId>client</artifactId>
+    <version>0.1.1-ALPHA-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <scion.junit.version>4.13.2</scion.junit.version>
-        <scion.protobuf.version>3.23.0</scion.protobuf.version>
-        <scion.slf4j.version>2.0.7</scion.slf4j.version>
+        <scion.dnsjava.version>3.5.3</scion.dnsjava.version>
+        <scion.google-java-format.version>1.19.2</scion.google-java-format.version>
+        <scion.io-grpc.version>1.61.0</scion.io-grpc.version>
+        <scion.junit.version>5.10.1</scion.junit.version>
+        <scion.protobuf.version>3.25.2</scion.protobuf.version>
+        <scion.os72-protoc.version>3.11.4</scion.os72-protoc.version>
+        <scion.slf4j.version>2.0.9</scion.slf4j.version>
 
         <scion.bnd-maven-plugin.version>6.4.0</scion.bnd-maven-plugin.version>
         <scion.build-helper-maven-plugin.version>3.3.0</scion.build-helper-maven-plugin.version>
+        <scion.fmt-maven.version>2.20</scion.fmt-maven.version>
         <scion.maven-clean-plugin.version>3.2.0</scion.maven-clean-plugin.version>
         <scion.maven-compiler-plugin.version>3.11.0</scion.maven-compiler-plugin.version>
         <scion.maven-deploy-plugin.version>3.1.1</scion.maven-deploy-plugin.version>
@@ -29,7 +32,7 @@
         <scion.maven-plugin-plugin.version>3.8.2</scion.maven-plugin-plugin.version>
         <scion.maven-resources-plugin.version>3.3.1</scion.maven-resources-plugin.version>
         <scion.maven-source-plugin.version>3.2.1</scion.maven-source-plugin.version>
-        <scion.maven-surefire-plugin.version>3.0.0</scion.maven-surefire-plugin.version>
+        <scion.maven-surefire-plugin.version>3.1.2</scion.maven-surefire-plugin.version>
         <scion.nexus-staging-maven-plugin.version>1.6.13</scion.nexus-staging-maven-plugin.version>
     </properties>
 
@@ -46,74 +49,49 @@
         </license>
     </licenses>
 
+    <developers>
+        <developer>
+            <id>tzaeschke</id>
+            <name>Tilmann Zäschke</name>
+            <email>ztilmann@ethz.ch</email>
+            <organization>ETH Zurich</organization>
+            <timezone>1</timezone>
+        </developer>
+    </developers>
+
     <scm>
-        <url>https://github.com/tzaeschke/scion-java-api</url>
-        <connection>scm:git:git@github.com:tzaeschke/scion-java-api.git</connection>
-        <developerConnection>scm:git:git@github.com:tzaeschke/scion-java-api.git</developerConnection>
+        <url>https://github.com/netsec-ethz/scion-java-client</url>
+        <connection>scm:git:git@github.com:netsec-ethz/scion-java-client.git</connection>
+        <developerConnection>scm:git:git@github.com:netsec-ethz/scion-java-client.git
+        </developerConnection>
         <tag>HEAD</tag>
     </scm>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <issueManagement>
+        <system>github</system>
+        <url>https://github.com/netsec-ethz/scion-java-client/issues</url>
+    </issueManagement>
 
     <!-- mvn versions:display-dependency-updates -->
-    <dependencyManagement>
-        <dependencies>
-            <!-- Note that this is upgraded in the on-jdk-9 profile below -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${scion.slf4j.version}</version>
-            </dependency>
-
-            <!-- Include this globally for all tests -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-simple</artifactId>
-                <version>${scion.slf4j.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${scion.junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>${scion.protobuf.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java-util</artifactId>
-                <version>${scion.protobuf.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protoc</artifactId>
-                <version>3.23.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-protobuf</artifactId>
-                <version>1.56.1</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
-        <!-- Note that this is upgraded in the on-jdk-9 profile below -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${scion.slf4j.version}</version>
         </dependency>
 
-        <!-- Include this globally for all tests -->
+        <!-- Include default slf4j implementation for all tests -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
@@ -122,8 +100,8 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
             <version>${scion.junit.version}</version>
             <scope>test</scope>
         </dependency>
@@ -143,22 +121,60 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
-            <version>3.24.0</version>
+            <version>${scion.protobuf.version}</version>
             <type>pom</type>
         </dependency>
 
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
-            <version>1.56.1</version>
+            <version>${scion.io-grpc.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+            <version>${scion.io-grpc.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>${scion.io-grpc.version}</version>
+        </dependency>
+
+        <!-- Required for compilation with Java 9 or later SDKs-->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+            <version>${scion.dnsjava.version}</version>
+        </dependency>
+
+        <!-- Do we need this? TODO -->
+        <dependency>
+            <groupId>com.google.googlejavaformat</groupId>
+            <artifactId>google-java-format</artifactId>
+            <version>${scion.google-java-format.version}</version>
+        </dependency>
+        <!--        For gRPC -->
+        <!--        <dependency>-->
+        <!--            <groupId>javax.annotation</groupId>-->
+        <!--            <artifactId>javax.annotation-api</artifactId>-->
+        <!--            <version>1.3.2</version>-->
+        <!--        </dependency>-->
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -167,7 +183,7 @@
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.11.4</version>
+                <version>${scion.os72-protoc.version}</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
@@ -176,18 +192,30 @@
                         </goals>
                         <configuration>
                             <optimizeCodegen>false</optimizeCodegen>
-<!--                            <protocVersion>3.23.0</protocVersion>-->
+                            <!--                            <protocVersion>3.23.0</protocVersion>-->
                             <includeStdTypes>true</includeStdTypes>
-<!--                        </configuration>-->
-                        <!--                        <configuration>-->
-<!--                            <addProtoSources>all</addProtoSources>-->
-<!--                            <includeMavenTypes>direct</includeMavenTypes>-->
+                            <!--                        </configuration>-->
+                            <!--                        <configuration>-->
+                            <!--                            <addProtoSources>all</addProtoSources>-->
+                            <!--                            <includeMavenTypes>direct</includeMavenTypes>-->
                             <includeDirectories>
                                 <include>src/main/proto</include>
                             </includeDirectories>
                             <inputDirectories>
                                 <include>src/main/proto</include>
                             </inputDirectories>
+                            <outputTargets>
+                                <outputTarget>
+                                    <type>java</type>
+                                    <!--                                    <outputDirectory>src/main/java</outputDirectory>-->
+                                </outputTarget>
+                                <outputTarget>
+                                    <type>grpc-java</type>
+                                    <!--                                    <outputDirectory>src/main/java</outputDirectory>-->
+                                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.59.0
+                                    </pluginArtifact>
+                                </outputTarget>
+                            </outputTargets>
                         </configuration>
                     </execution>
                 </executions>
@@ -211,22 +239,254 @@
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-shade-plugin</artifactId>-->
-<!--                <version>3.2.4</version>-->
-<!--                <configuration>-->
-<!--                    &lt;!&ndash;Put your configurations here&ndash;&gt;-->
-<!--                </configuration>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>shade</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-shade-plugin</artifactId>-->
+            <!--                <version>3.2.4</version>-->
+            <!--                <configuration>-->
+            <!--                    &lt;!&ndash;Put your configurations here&ndash;&gt;-->
+            <!--                </configuration>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>shade</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>config/checkstyle/checkstyle-config.xml</configLocation>
+                            <suppressionsLocation>config/checkstyle/suppressions.xml
+                            </suppressionsLocation>
+                            <propertyExpansion>base_dir=${project.basedir}</propertyExpansion>
+                            <failsOnError>true</failsOnError>
+                            <consoleOutput>true</consoleOutput>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${scion.maven-surefire-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.0.1</version>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <preparationProfiles>release-prepare</preparationProfiles>
+                    <releaseProfiles>release-perform</releaseProfiles>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release-prepare</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>8.4.3</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>release-perform</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>${gpg.keyname}</keyname>
+                                    <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.6.2</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>warnings</id>
+            <properties>
+                <showWarnings>true</showWarnings>
+                <compilerArgument>-Xlint:all,-rawtypes</compilerArgument>
+            </properties>
+        </profile>
+        <profile>
+            <!-- Profile to format the sources using the Google Java formatter  -->
+            <id>format</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- This plugin makes sure to run the profile with a JDK 11 or above -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>${scion.maven-enforcer-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>enforce-versions</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireJavaVersion>
+                                            <version>[11,)</version>
+                                        </requireJavaVersion>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.spotify.fmt</groupId>
+                        <artifactId>fmt-maven-plugin</artifactId>
+                        <version>${scion.fmt-maven.version}</version>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <skipSortingImports>false</skipSortingImports>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>format</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!-- Profile to format the sources using the Google Java formatter  -->
+            <id>verify-format</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- This plugin makes sure to run the profile with a JDK 11 or above -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>${scion.maven-enforcer-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>enforce-versions</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireJavaVersion>
+                                            <version>[11,)</version>
+                                        </requireJavaVersion>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.spotify.fmt</groupId>
+                        <artifactId>fmt-maven-plugin</artifactId>
+                        <version>${scion.fmt-maven.version}</version>
+                        <configuration>
+                            <displayLimit>1000</displayLimit>
+                            <verbose>true</verbose>
+                            <failOnError>true</failOnError>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
