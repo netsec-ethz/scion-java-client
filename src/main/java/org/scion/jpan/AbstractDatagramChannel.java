@@ -22,6 +22,10 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.NotYetConnectedException;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.spi.SelectorProvider;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -30,7 +34,8 @@ import org.scion.jpan.internal.InternalConstants;
 import org.scion.jpan.internal.ScionHeaderParser;
 import org.scion.jpan.internal.ScmpParser;
 
-abstract class AbstractDatagramChannel<C extends AbstractDatagramChannel<?>> implements Closeable {
+abstract class AbstractDatagramChannel<C extends AbstractDatagramChannel<?>>
+    extends SelectableChannel implements Closeable {
 
   protected static final int DEFAULT_BUFFER_SIZE = 2000;
   private final java.nio.channels.DatagramChannel channel;
@@ -71,17 +76,24 @@ abstract class AbstractDatagramChannel<C extends AbstractDatagramChannel<?>> imp
     this.bufferSend = ByteBuffer.allocateDirect(2000);
   }
 
-  protected void configureBlocking(boolean block) throws IOException {
+  @Override
+  public SelectableChannel configureBlocking(boolean block) throws IOException {
     synchronized (stateLock) {
       channel.configureBlocking(block);
     }
+    return this;
   }
 
-  // `protected` because it should not be visible in ScmpChannel API.
-  protected boolean isBlocking() {
+  @Override
+  public boolean isBlocking() {
     synchronized (stateLock) {
       return channel.isBlocking();
     }
+  }
+
+  @Override
+  public Object blockingLock() {
+    return stateLock;
   }
 
   public PathPolicy getPathPolicy() {
@@ -199,14 +211,8 @@ abstract class AbstractDatagramChannel<C extends AbstractDatagramChannel<?>> imp
     }
   }
 
-  public boolean isOpen() {
-    synchronized (stateLock) {
-      return channel.isOpen();
-    }
-  }
-
   @Override
-  public void close() throws IOException {
+  protected void implCloseChannel() throws IOException {
     synchronized (stateLock) {
       channel.disconnect();
       channel.close();
@@ -657,5 +663,35 @@ abstract class AbstractDatagramChannel<C extends AbstractDatagramChannel<?>> imp
 
   protected Object stateLock() {
     return stateLock;
+  }
+
+  public static ScionDatagramChannel open(
+          ScionService service, java.nio.channels.DatagramChannel channel) throws IOException {
+    return new ScionDatagramChannel(service, channel);
+  }
+
+  @Override
+  public SelectorProvider provider() {
+    return null;
+  }
+
+  @Override
+  public int validOps() {
+    return channel().validOps();
+  }
+
+  @Override
+  public boolean isRegistered() {
+    return channel().isRegistered();
+  }
+
+  @Override
+  public SelectionKey keyFor(Selector sel) {
+    return channel().keyFor(sel);
+  }
+
+  @Override
+  public SelectionKey register(Selector sel, int ops, Object att) throws ClosedChannelException {
+    return channel().register(sel, ops, att);
   }
 }

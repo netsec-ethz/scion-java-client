@@ -392,8 +392,8 @@ public class ScmpChannel implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
-      super.close();
+    protected void implCloseChannel() throws IOException {
+      super.implCloseChannel();
       selector.close();
     }
   }
