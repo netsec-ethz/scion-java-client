@@ -58,11 +58,6 @@ public class ScionDatagramChannel extends AbstractDatagramChannel<ScionDatagramC
     return open(service, java.nio.channels.DatagramChannel.open());
   }
 
-  @Override
-  public Object blockingLock() {
-    return null;
-  }
-
   public ScionSocketAddress receive(ByteBuffer userBuffer) throws IOException {
     readLock().lock();
     try {
