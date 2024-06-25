@@ -15,6 +15,7 @@
 package org.scion.jpan.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -151,7 +152,12 @@ public class SegmentsMinimal1111Test extends AbstractSegmentsMinimalTest {
     assertEquals(1, controlServer.getAndResetCallCount());
   }
 
-  @Disabled // TODO implement shortcuts!
+  // TODO three cases:
+  //    - shortcut: 1111->1112
+  //    - on UP path: 1111->111
+  //    - on DOWN path: 111->1111
+
+  //@Disabled // TODO implement shortcuts!
   @Test
   void caseE_SameIsd_UpDown_OneCoreAS() throws IOException {
     addResponses();
@@ -184,6 +190,8 @@ public class SegmentsMinimal1111Test extends AbstractSegmentsMinimalTest {
       Daemon.Path path = paths.get(0);
       System.out.println(ToStringUtil.path(path.getRaw().toByteArray())); // TODO
       System.out.println(ToStringUtil.pathLong(path.getRaw().toByteArray())); // TODO
+
+      fail();
 
       //      Daemon.Path path = paths.get(0);
       //      ByteBuffer rawBB = path.getRaw().asReadOnlyByteBuffer();

@@ -267,7 +267,42 @@ public class Segments {
         paths.add(buildPath(brLookup, pathSegment0, pathSegment1));
       }
     }
+
+    if (ScionUtil.extractIsd(srcIsdAs) == ScionUtil.extractIsd(dstIsdAs)) {
+      // Same ISD? Search for shortcuts.
+      for (Daemon.Path path : paths) {
+        HashMap<Long, Integer> map = new HashMap<>();
+        int posUp = -1;
+        int posDown = -1;
+        for (int i = 0; i < path.getInterfacesCount(); i++) {
+          long isdAs = path.getInterfacesList().get(i).getIsdAs();
+          if (map.containsKey(isdAs) && map.get(isdAs) - i > 1) {
+            posUp = map.get(isdAs);
+            posDown = i;
+          } else {
+            map.put(isdAs, i);
+          }
+          // keep going, we want to find the LAST/LOWEST AS that occurs twice.
+        }
+        if (posUp >= 0) {
+          createShortCut(path, posUp, posDown);
+        }
+      }
+    }
+
     return paths;
+  }
+
+  private static void createShortCut(Daemon.Path path, int posUp, int posDown) {
+    System.out.println("Removing: " + posUp + " -> " + posDown);
+    System.out.println("          " + ScionUtil.toStringPath(path.getRaw().toByteArray()));
+    for (int i = 0; i < path.getInterfacesCount(); i++) {
+      System.out.print(ScionUtil.toStringIA(path.getInterfacesList().get(i).getIsdAs()) + " ");
+    }
+    System.out.println();
+    for (int i = 0; i < (posDown - posUp); i++) {
+      path.getInterfacesList().remove(posUp);
+    }
   }
 
   private static List<Daemon.Path> combineThreeSegments(
