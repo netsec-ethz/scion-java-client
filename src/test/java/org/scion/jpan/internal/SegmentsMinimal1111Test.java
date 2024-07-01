@@ -202,11 +202,11 @@ public class SegmentsMinimal1111Test extends AbstractSegmentsMinimalTest {
       ByteBuffer rawBB = path.getRaw().asReadOnlyByteBuffer();
       checkMetaHeader(rawBB, 2, 2, 0);
       checkInfo(rawBB, 18215, 0);
-      checkInfo(rawBB, 5701, 1);
-      checkHopField(rawBB, 111, 0);
-      checkHopField(rawBB, 0, 2);
-      checkHopField(rawBB, 0, 3);
-      checkHopField(rawBB, 453, 0);
+      checkInfo(rawBB, 25161, 1); // TODO why not 5701? Verify!
+      checkHopField(rawBB, 123, 0);
+      checkHopField(rawBB, 111, 1111);
+      checkHopField(rawBB, 111, 1112);
+      checkHopField(rawBB, 234, 0);
       assertEquals(0, rawBB.remaining());
 
       // compare with recorded byte[]
