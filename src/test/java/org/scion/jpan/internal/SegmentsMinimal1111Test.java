@@ -23,7 +23,6 @@ import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.scion.jpan.PackageVisibilityHelper;
 import org.scion.jpan.Scion;
@@ -151,7 +150,12 @@ public class SegmentsMinimal1111Test extends AbstractSegmentsMinimalTest {
     assertEquals(1, controlServer.getAndResetCallCount());
   }
 
-  @Disabled // TODO implement shortcuts!
+  // TODO three cases:
+  //    - shortcut: 1111->1112
+  //    - on UP path: 1111->111
+  //    - on DOWN path: 111->1111
+
+  // @Disabled // TODO implement shortcuts!
   @Test
   void caseE_SameIsd_UpDown_OneCoreAS() throws IOException {
     addResponses();
@@ -172,11 +176,17 @@ public class SegmentsMinimal1111Test extends AbstractSegmentsMinimalTest {
       //  hop: 0: 0
       //  linkType: 0 LINK_TYPE_UNSPECIFIED
       //  linkType: 0 LINK_TYPE_UNSPECIFIED
-      byte[] raw = {
+      byte[] raw2 = {
         0, 0, 32, -128, 0, 0, -26, -50, 101, -98, -46, 117, 1, 0, 27, -28, 101, -98, -46, 117, 0,
         63, 0, 123, 0, 0, 3, -114, 122, -10, -44, -122, 0, 63, 0, 111, 4, 87, -3, 42, 7, 118, 83,
         47, 0, 63, 0, 111, 4, 88, 63, -115, -73, 79, 31, 37, 0, 63, 0, -22, 0, 0, 68, -20, 91, 1,
         58, -37
+      };
+      byte[] raw = {
+        0, 0, 32, -128, 0, 0, -29, -10, 102, -126, -73, -34, 1, 0, 98, -73, 102, -126, -72, 66, 0,
+        63, 0, 123, 0, 0, 29, 108, 17, 27, -111, -85, 0, 63, 0, 111, 4, 87, -71, 79, 79, -52, 14,
+        -35, 0, 63, 0, 111, 4, 88, -112, -22, -128, -13, 23, -100, 0, 63, 0, -22, 0, 0, -42, -5,
+        -68, -22, 100, 105
       };
 
       System.out.println(ToStringUtil.pathLong(raw)); // TODO
@@ -185,30 +195,33 @@ public class SegmentsMinimal1111Test extends AbstractSegmentsMinimalTest {
       System.out.println(ToStringUtil.path(path.getRaw().toByteArray())); // TODO
       System.out.println(ToStringUtil.pathLong(path.getRaw().toByteArray())); // TODO
 
+      // fail();
+      checkMetaHeader(ByteBuffer.wrap(raw), 2, 2, 0);
+
       //      Daemon.Path path = paths.get(0);
-      //      ByteBuffer rawBB = path.getRaw().asReadOnlyByteBuffer();
-      //      checkMetaHeader(rawBB, 2, 2, 0);
-      //      checkInfo(rawBB, 18215, 0);
-      //      checkInfo(rawBB, 5701, 1);
-      //      checkHopField(rawBB, 111, 0);
-      //      checkHopField(rawBB, 0, 2);
-      //      checkHopField(rawBB, 0, 3);
-      //      checkHopField(rawBB, 453, 0);
-      //      assertEquals(0, rawBB.remaining());
-      //
-      //      // compare with recorded byte[]
-      //      checkRaw(raw, path.getRaw().toByteArray());
-      //
-      //      assertEquals(1450, path.getMtu());
-      //      assertEquals("127.0.0.25:31016", path.getInterface().getAddress().getAddress());
-      //      checkInterface(path, 0, 111, "1-ff00:0:111");
-      //      checkInterface(path, 1, 2, "1-ff00:0:110");
-      //      checkInterface(path, 2, 3, "1-ff00:0:110");
-      //      checkInterface(path, 3, 453, "1-ff00:0:112");
-      //      assertEquals(4, path.getInterfacesCount());
+      ByteBuffer rawBB = path.getRaw().asReadOnlyByteBuffer();
+      checkMetaHeader(rawBB, 2, 2, 0);
+      checkInfo(rawBB, 18215, 0);
+      checkInfo(rawBB, 25161, 1); // TODO why not 5701? Verify!
+      checkHopField(rawBB, 123, 0);
+      checkHopField(rawBB, 111, 1111);
+      checkHopField(rawBB, 111, 1112);
+      checkHopField(rawBB, 234, 0);
+      assertEquals(0, rawBB.remaining());
+
+      // compare with recorded byte[]
+      checkRaw(raw, path.getRaw().toByteArray());
+
+      assertEquals(1450, path.getMtu());
+      assertEquals("127.0.0.25:31016", path.getInterface().getAddress().getAddress());
+      checkInterface(path, 0, 111, "1-ff00:0:111");
+      checkInterface(path, 1, 2, "1-ff00:0:110");
+      checkInterface(path, 2, 3, "1-ff00:0:110");
+      checkInterface(path, 3, 453, "1-ff00:0:112");
+      assertEquals(4, path.getInterfacesCount());
     }
-    //    assertEquals(1, topoServer.getAndResetCallCount());
-    //    assertEquals(2, controlServer.getAndResetCallCount());
+    assertEquals(1, topoServer.getAndResetCallCount());
+    assertEquals(2, controlServer.getAndResetCallCount());
   }
 
   @Test

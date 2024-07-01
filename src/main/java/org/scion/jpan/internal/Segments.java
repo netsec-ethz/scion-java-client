@@ -264,7 +264,156 @@ public class Segments {
         paths.add(buildPath(brLookup, pathSegment0, pathSegment1));
       }
     }
+
+    if (ScionUtil.extractIsd(srcIsdAs) == ScionUtil.extractIsd(dstIsdAs)) {
+      System.out.println("Seg: same ISD! " + ScionUtil.toStringIA(srcIsdAs));
+      // Same ISD? Search for shortcuts.
+      int pos = 0;
+      for (Daemon.Path path : paths) {
+        byte[] before = path.getRaw().toByteArray();
+        int segs = path.getRaw().asReadOnlyByteBuffer().getInt();
+        System.out.println(
+            "Segs: "
+                + ((segs >> 12) & 0x3F)
+                + " - "
+                + ((segs >> 6) & 0x3F)
+                + " - "
+                + (segs & 0x3F));
+        System.out.println("Path1: " + ToStringUtil.path(before));
+        System.out.println("Path2: " + ToStringUtil.pathLong(before));
+        HashMap<Long, Integer> map = new HashMap<>();
+        int posUp = -1;
+        int posDown = -1;
+        for (int i = 0; i < path.getInterfacesCount(); i++) {
+          long isdAs = path.getInterfacesList().get(i).getIsdAs();
+          System.out.println("   Checking:  " + ScionUtil.toStringIA(isdAs) + " -> " + i);
+          //          if (map.containsKey(isdAs)) {
+          //            System.out.println("   Found....:  " + map.get(isdAs) + " -> " +
+          // (map.get(isdAs) - i));
+          //          }
+          if (map.containsKey(isdAs) && i - map.get(isdAs) > 1) {
+            System.out.println("   Found!!!!!:  " + ScionUtil.toStringIA(isdAs) + " -> " + i);
+            posUp = map.get(isdAs);
+            posDown = i;
+            System.out.println("                " + posUp + " -> " + posDown);
+          } else {
+            //            System.out.println("   Adding:" + ScionUtil.toStringIA(isdAs) + " -> " +
+            // i);
+            map.putIfAbsent(isdAs, i);
+          }
+          // keep going, we want to find the LAST/LOWEST AS that occurs twice.
+        }
+        if (posUp >= 0) {
+          System.out.println("Seg: Creating shortcut! " + posUp);
+          paths.set(pos, createShortCut(path, posUp, posDown, brLookup));
+        } else {
+          System.out.println("Seg: No shortcut! " + posUp);
+        }
+        pos++;
+      }
+    }
+
     return paths;
+  }
+
+  private static Daemon.Path createShortCut(
+      Daemon.Path oldPath, int posUp, int posDown, ScionBootstrapper brLookup) {
+    System.out.println("Removing: " + posUp + " -> " + posDown);
+    System.out.println("          " + ScionUtil.toStringPath(oldPath.getRaw().toByteArray()));
+
+    Daemon.Path.Builder newPath = Daemon.Path.newBuilder();
+    for (int i = 0; i < oldPath.getInterfacesCount(); i++) {
+      System.out.print(ScionUtil.toStringIA(oldPath.getInterfacesList().get(i).getIsdAs()) + " ");
+    }
+    System.out.println();
+    //    for (int i = 0; i < (posDown - posUp); i++) {
+    //      newPath.getInterfacesList().remove(posUp);
+    //    }
+    int hopCount0 = 0;
+    int hopCount1 = 0;
+    for (int i = 0; i <= posUp; i++) {
+      newPath.addInterfaces(oldPath.getInterfaces(i));
+      System.out.println("Adding 1: " + i);
+      hopCount0++;
+    }
+    for (int i = posDown; i < oldPath.getInterfacesCount(); i++) {
+      newPath.addInterfaces(oldPath.getInterfaces(i));
+      hopCount1++;
+      System.out.println("Adding 2: " + i);
+    }
+
+    // raw path
+    ByteBuffer raw = ByteBuffer.allocate(1000);
+    ByteBuffer oldRaw = oldPath.getRaw().asReadOnlyByteBuffer();
+
+    // path meta header
+    int pathMetaHeader = (hopCount0 << 12) | (hopCount1 << 6);
+    raw.putInt(pathMetaHeader);
+    int oldOffset = 4; // move position
+
+    // info fields
+    //    int nSegments = (hopCount0 > 0 ? 1 : 0) + (hopCount1 > 0 ? 1 : 0);
+    //    boolean[] reversed = new boolean[nSegments];
+    //    long startIA = brLookup.getLocalIsdAs();
+    //    final ByteUtil.MutLong endingIA = new ByteUtil.MutLong(-1);
+    //    for (int i = 0; i < infos.length; i++) {
+    //      reversed[i] = isReversed(segments[i], startIA, endingIA);
+    //      writeInfoField(raw, infos[i], reversed[i]);
+    //      startIA = endingIA.get();
+    //    }
+    if (hopCount0 > 0) {
+      raw.putLong(oldRaw.getLong(oldOffset));
+      oldOffset += 8;
+      System.out.println("Moving 1: " + 1);
+    }
+    if (hopCount1 > 0) {
+      raw.putLong(oldRaw.getLong(oldOffset));
+      oldOffset += 8;
+      System.out.println("Moving 2: " + 2);
+    }
+
+    // hop fields
+    newPath.setMtu(brLookup.getLocalMtu());
+    //    for (int i = 0; i < segments.length; i++) {
+    //      // bytePosSegID: 6 = 4 bytes path head + 2 byte flag in first info field
+    //      writeHopFields(path, raw, 6 + i * 8, segments[i], reversed[i], infos[i]);
+    //    }
+    for (int i = 0; i < hopCount0; i++) {
+      for (int j = 0; j < 3; j++) {
+        raw.putInt(oldRaw.getInt(oldOffset));
+        oldOffset += 4;
+      }
+      System.out.println("Hopping 1: " + i);
+    }
+    oldOffset += (oldPath.getInterfacesCount() - 2 - hopCount0 - hopCount1) * 12;
+    for (int i = 0; i < hopCount1; i++) {
+      for (int j = 0; j < 3; j++) {
+        raw.putInt(oldRaw.getInt(oldOffset));
+        oldOffset += 4;
+      }
+      System.out.println("Hopping 2: " + i);
+    }
+
+    raw.flip();
+    newPath.setRaw(ByteString.copyFrom(raw));
+
+    // TODO where do we get these?
+    //    segUp.getSegmentInfo();
+    //    path.setLatency();
+    //    path.setInternalHops();
+    //    path.setNotes();
+    // First hop
+    String firstHop = brLookup.getBorderRouterAddress((int) newPath.getInterfaces(0).getId());
+    Daemon.Underlay underlay = Daemon.Underlay.newBuilder().setAddress(firstHop).build();
+    Daemon.Interface interfaceAddr = Daemon.Interface.newBuilder().setAddress(underlay).build();
+    newPath.setInterface(interfaceAddr);
+
+    newPath.setExpiration(oldPath.getExpiration());
+    // newPath.setMtu(oldPath.getMtu()); // TODO adjust
+    // newPath.setInterface(oldPath.getInterface()); // TODO this may change if the shortcut goes
+    // DOWN
+
+    return newPath.build();
   }
 
   private static List<Daemon.Path> combineThreeSegments(
